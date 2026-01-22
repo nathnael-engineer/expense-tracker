@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:expense_tracker/core/utils/formatter.dart';
 import 'package:expense_tracker/features/expenses/domain/entities/expense_entity.dart';
-import 'package:go_router/go_router.dart';
 
 class ExpenseTile extends StatelessWidget {
   final ExpenseEntity expense;
-  const ExpenseTile({super.key, required this.expense});
+  final VoidCallback? onTap;
+
+  const ExpenseTile({super.key, required this.expense, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -14,8 +15,11 @@ class ExpenseTile extends StatelessWidget {
       child: ListTile(
         title: Text(expense.title),
         subtitle: Text("${expense.category} • ${Formatter.date(expense.date)}"),
-        trailing: Text(Formatter.currency(expense.amount)),
-        onTap: () => context.push('/expenses/view', extra: expense),
+        trailing: Text(
+          Formatter.currency(expense.amount),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        onTap: onTap,
       ),
     );
   }

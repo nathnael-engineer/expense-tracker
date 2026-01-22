@@ -7,5 +7,7 @@ import 'package:expense_tracker/features/expenses/domain/entities/summary_result
 abstract class ExpenseRepository {
   Future<Either<Failure, void>> addExpense(ExpenseEntity expense);
   Future<Either<Failure, List<ExpenseEntity>>> getExpenses();
+  Future<Either<Failure, void>> updateExpense(ExpenseEntity expense);
+  Future<Either<Failure, void>> deleteExpense(String expenseId);
   Future<Either<Failure, SummaryResult>> getSummary();
 }

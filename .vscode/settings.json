@@ -1,13 +1,13 @@
 {
   // ===== Flutter / Dart =====
   "editor.formatOnSave": true,
-  "dart.flutterHotReloadOnSave": true,
+  "dart.flutterHotReloadOnSave": "allIfDirty",
   "dart.previewFlutterUiGuides": true,
   "dart.showInspectorNotificationsForWidgetErrors": true,
 
   // Auto-fix & formatting
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
+    "source.fixAll.eslint": "explicit"
   },
 
   // Clean files

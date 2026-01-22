@@ -60,21 +60,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HomeScreen(),
         routes: [
           GoRoute(
-            path: '/add-expense',
+            path: 'add-expense',
             name: 'add-expense',
-            builder: (context, state) => const AddExpenseScreen(),
+            builder: (context, state) {
+              return const AddExpenseScreen();
+            },
           ),
           GoRoute(
-            path: '/dashboard',
+            path: 'edit-expense',
+            name: 'edit-expense',
+            builder: (context, state) {
+              final expense = state.extra as ExpenseEntity?;
+              return AddExpenseScreen(expense: expense);
+            },
+          ),
+          GoRoute(
+            path: 'dashboard',
             name: 'dashboard',
             builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
-            path: '/view-expense',
+            path: 'view-expense',
             name: 'view-expense',
             builder: (context, state) {
-              final expense = state.extra as ExpenseEntity?;
-              return ViewExpenseScreen(expense: expense!);
+              final expense = state.extra as ExpenseEntity;
+              return ViewExpenseScreen(expense: expense);
             },
           ),
         ],

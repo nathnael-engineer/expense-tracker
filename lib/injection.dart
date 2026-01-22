@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 // ------------------------------
 // Features - Auth
@@ -23,6 +24,8 @@ import 'features/expenses/domain/repositories/expense_repository.dart';
 import 'features/expenses/domain/usecases/add_expense_usecase.dart';
 import 'features/expenses/domain/usecases/get_expenses_usecase.dart';
 import 'features/expenses/domain/usecases/get_summary_usecase.dart';
+import 'features/expenses/domain/usecases/update_expense_usecase.dart';
+import 'features/expenses/domain/usecases/delete_expense_usecase.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -37,6 +40,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
   sl.registerLazySingleton<FirebaseDatabase>(() => FirebaseDatabase.instance);
   sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
+  sl.registerLazySingleton<FirebaseFunctions>(() => FirebaseFunctions.instance);
 
   // ------------------------------
   // Auth Datasource
@@ -74,7 +78,11 @@ Future<void> initDependencies() async {
   // Expense Datasource
   // ------------------------------
   sl.registerLazySingleton<ExpenseRemoteDataSource>(
-    () => ExpenseRemoteDataSourceImpl(sl<FirebaseFirestore>()),
+    () => ExpenseRemoteDataSourceImpl(
+      sl<FirebaseFirestore>(),
+      sl<FirebaseFunctions>(),
+      sl<FirebaseAuth>(),
+    ),
   );
 
   // ------------------------------
@@ -89,6 +97,14 @@ Future<void> initDependencies() async {
   // ------------------------------
   sl.registerLazySingleton<AddExpenseUseCase>(
     () => AddExpenseUseCase(sl<ExpenseRepository>()),
+  );
+
+  sl.registerLazySingleton<UpdateExpenseUseCase>(
+    () => UpdateExpenseUseCase(sl<ExpenseRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteExpenseUseCase>(
+    () => DeleteExpenseUseCase(sl<ExpenseRepository>()),
   );
 
   sl.registerLazySingleton<GetExpensesUseCase>(

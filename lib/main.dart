@@ -6,12 +6,16 @@ import 'package:expense_tracker/core/theme/app_theme.dart';
 import 'package:expense_tracker/core/router/app_router.dart';
 import 'package:expense_tracker/core/firebase/firebase_emulator.dart';
 import 'package:expense_tracker/injection.dart' as injection;
+import 'package:expense_tracker/core/firebase/firebase_appcheck.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase SDK
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Enable Firebase App Check (DEBUG MODE)
+  await FirebaseAppCheckService.activate();
 
   // Connect Firebase services to Firebase Emulators (DEBUG ONLY)
   await FirebaseEmulatorConfig.connect();

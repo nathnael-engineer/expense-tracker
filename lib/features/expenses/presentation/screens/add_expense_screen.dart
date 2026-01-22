@@ -1,3 +1,4 @@
+import 'package:expense_tracker/features/expenses/domain/entities/expense_category.dart';
 import 'package:expense_tracker/features/expenses/domain/entities/expense_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,9 @@ import 'package:expense_tracker/features/expenses/application/providers/expense_
 import 'package:expense_tracker/features/expenses/domain/usecases/add_expense_usecase.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
-  const AddExpenseScreen({super.key});
+  final ExpenseEntity? expense;
+
+  const AddExpenseScreen({super.key, this.expense});
 
   @override
   ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -17,8 +20,20 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
-  String _category = 'Other';
+  String _selectedCategory = ExpenseCategories.other;
   DateTime _date = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.expense != null) {
+      _titleCtrl.text = widget.expense!.title;
+      _amountCtrl.text = widget.expense!.amount.toString();
+      _selectedCategory = widget.expense!.category;
+      _date = widget.expense!.date;
+    }
+  }
 
   @override
   void dispose() {
@@ -27,26 +42,27 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     super.dispose();
   }
 
-  Future<void> _onAddExpense() async {
+  Future<void> _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
 
-    await ref
-        .read(expenseNotifierProvider.notifier)
-        .addExpense(
-          AddExpenseParams(
-            expense: ExpenseEntity(
-              id: '', // ID will be assigned in the data layer
-              title: _titleCtrl.text.trim(),
-              amount: amount,
-              category: _category,
-              date: _date,
-            ),
-          ),
-        );
+    final expense = ExpenseEntity(
+      id: widget.expense?.id ?? '',
+      title: _titleCtrl.text.trim(),
+      amount: amount,
+      category: _selectedCategory,
+      date: _date,
+    );
 
-    // After adding, pop back
+    final notifier = ref.read(expenseNotifierProvider.notifier);
+
+    if (widget.expense == null) {
+      await notifier.addExpense(AddExpenseParams(expense: expense));
+    } else {
+      await notifier.updateExpense(expense);
+    }
+
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -62,10 +78,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(expenseNotifierProvider).isLoading;
+    final expenseState = ref.watch(expenseNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Expense")),
+      appBar: AppBar(
+        title: Text(widget.expense == null ? "Add Expense" : "Edit Expense"),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -95,13 +113,19 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
               // Category Dropdown
               DropdownButtonFormField<String>(
-                initialValue: _category,
-                items: ['Food', 'Transport', 'Bills', 'Other']
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (val) => setState(() => _category = val!),
-                decoration: const InputDecoration(labelText: "Category"),
+                initialValue: _selectedCategory,
+                items: ExpenseCategories.all.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() => _selectedCategory = value!);
+                },
+                decoration: const InputDecoration(labelText: 'Category'),
               ),
+
               const SizedBox(height: 12),
 
               // Date Picker
@@ -121,13 +145,23 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: isLoading ? null : _onAddExpense,
-                  child: isLoading
+                  onPressed:
+                      expenseState.isAddingExpense ||
+                          expenseState.isUpdatingExpense
+                      ? null
+                      : _onSubmit,
+                  child:
+                      expenseState.isAddingExpense ||
+                          expenseState.isUpdatingExpense
                       ? const CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation(Colors.white),
                         )
-                      : const Text("Add Expense"),
+                      : Text(
+                          widget.expense == null
+                              ? "Add Expense"
+                              : "Update Expense",
+                        ),
                 ),
               ),
             ],

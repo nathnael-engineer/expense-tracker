@@ -24,15 +24,27 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   @override
   Future<Either<Failure, void>> addExpense(ExpenseEntity expense) async {
     try {
-      final model = ExpenseModel(
-        id: expense.id,
-        title: expense.title,
-        amount: expense.amount,
-        date: expense.date,
-        category: expense.category,
-      );
+      await remote.addExpense(ExpenseModel.fromEntity(expense));
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 
-      await remote.addExpense(model);
+  @override
+  Future<Either<Failure, void>> updateExpense(ExpenseEntity expense) async {
+    try {
+      await remote.updateExpense(ExpenseModel.fromEntity(expense));
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteExpense(String expenseId) async {
+    try {
+      await remote.deleteExpense(expenseId);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

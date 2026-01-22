@@ -9,6 +9,8 @@ import 'package:expense_tracker/features/auth/domain/usecases/send_email_verific
 import 'package:expense_tracker/features/expenses/domain/usecases/add_expense_usecase.dart';
 import 'package:expense_tracker/features/expenses/domain/usecases/get_expenses_usecase.dart';
 import 'package:expense_tracker/features/expenses/domain/usecases/get_summary_usecase.dart';
+import 'package:expense_tracker/features/expenses/domain/usecases/update_expense_usecase.dart';
+import 'package:expense_tracker/features/expenses/domain/usecases/delete_expense_usecase.dart';
 
 // ----------- AUTH USECASES -----------
 final loginUseCaseProvider = Provider((ref) => sl<LoginUseCase>());
@@ -22,3 +24,9 @@ final sendEmailVerificationUseCaseProvider = Provider(
 final addExpenseUseCaseProvider = Provider((ref) => sl<AddExpenseUseCase>());
 final getExpensesUseCaseProvider = Provider((ref) => sl<GetExpensesUseCase>());
 final getSummaryUseCaseProvider = Provider((ref) => sl<GetSummaryUseCase>());
+final updateExpenseUseCaseProvider = Provider(
+  (ref) => sl<UpdateExpenseUseCase>(),
+);
+final deleteExpenseUseCaseProvider = Provider(
+  (ref) => sl<DeleteExpenseUseCase>(),
+);

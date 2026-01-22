@@ -6,6 +6,9 @@ import 'package:expense_tracker/features/auth/application/providers/auth_provide
 import 'package:expense_tracker/features/auth/application/state/auth_state.dart';
 import 'package:expense_tracker/features/expenses/application/providers/expense_providers.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/expense_tile.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/summary_section.dart';
+
+import 'package:expense_tracker/core/utils/string_extensions.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -69,6 +72,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
+    ref.listen(expenseNotifierProvider, (prev, next) {
+      // Only show error after deletion finished
+      final wasDeleting = prev?.isDeletingExpense == true;
+      final isDoneDeleting = wasDeleting && next.isDeletingExpense == false;
+
+      if (isDoneDeleting &&
+          next.errorMessage != null &&
+          next.errorMessage!.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      // Success snackbar
+      if (isDoneDeleting &&
+          (next.errorMessage == null || next.errorMessage!.isEmpty)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Expense deleted'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -80,6 +113,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: _logout,
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
+          ),
+          IconButton(
+            onPressed: () => context.goNamed('dashboard'),
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Dashboard',
           ),
         ],
       ),
@@ -101,8 +139,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        userName,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        "Hi, ${userName.capitalize()} 👋",
+                        style: Theme.of(context).textTheme.titleLarge,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -143,28 +181,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Summary Cards
-              if (expenseState.summary != null)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildSummaryCard(
-                      "Today",
-                      expenseState.summary!.totalToday,
-                      Colors.orange,
-                    ),
-                    _buildSummaryCard(
-                      "This Week",
-                      expenseState.summary!.totalThisWeek,
-                      Colors.blue,
-                    ),
-                    _buildSummaryCard(
-                      "This Month",
-                      expenseState.summary!.totalThisMonth,
-                      Colors.green,
-                    ),
-                  ],
-                ),
+              // Summary Section
+              const SummarySection(),
               const SizedBox(height: 20),
 
               // Expenses List
@@ -181,7 +199,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         itemCount: expenses.length,
                         itemBuilder: (context, index) {
                           final expense = expenses[index];
-                          return ExpenseTile(expense: expense);
+                          return Dismissible(
+                            key: ValueKey(expense.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              color: Colors.red,
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
+                            ),
+                            confirmDismiss: (_) async {
+                              return await showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text('Delete Expense'),
+                                  content: const Text(
+                                    'Are you sure you want to delete this expense?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            onDismissed: (_) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                ref
+                                    .read(expenseNotifierProvider.notifier)
+                                    .clearError();
+
+                                ref
+                                    .read(expenseNotifierProvider.notifier)
+                                    .deleteExpense(expense.id);
+                              });
+                            },
+
+                            child: ExpenseTile(
+                              expense: expense,
+                              onTap: () {
+                                context.pushNamed(
+                                  'edit-expense',
+                                  extra: expense,
+                                );
+                              },
+                            ),
+                          );
                         },
                       ),
               ),
@@ -190,37 +264,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/add-expense'),
+        onPressed: () => context.pushNamed('add-expense'),
         backgroundColor: Colors.brown.shade700,
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(String title, double amount, Color color) {
-    return Expanded(
-      child: Card(
-        color: color,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            children: [
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "\$${amount.toStringAsFixed(2)}",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
