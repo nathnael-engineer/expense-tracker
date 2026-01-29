@@ -8,7 +8,6 @@ import 'package:expense_tracker/features/auth/domain/usecases/register_usecase.d
 import 'package:expense_tracker/features/auth/application/state/auth_state.dart';
 import 'package:expense_tracker/core/providers/providers.dart';
 import 'package:expense_tracker/core/config/app_env.dart';
-import 'package:flutter/foundation.dart';
 
 class AuthNotifier extends Notifier<AuthState> {
   @override
@@ -28,24 +27,14 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
-    debugPrint('🌀 LOGIN STARTED');
-
     final result = await _loginUseCase(LoginParams(email, password));
 
     result.fold(
       (failure) {
-        debugPrint('❌ LOGIN FAILED: ${failure.message}');
-
         state = state.copyWith(isLoading: false, errorMessage: failure.message);
-
-        debugPrint('🌀 isLoading = ${state.isLoading}');
       },
       (user) {
-        debugPrint('✅ LOGIN SUCCESS: ${user.email}');
-
         state = state.copyWith(isLoading: false, user: user);
-
-        debugPrint('🌀 isLoading = ${state.isLoading}');
       },
     );
   }
@@ -53,25 +42,15 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> register(String email, String password) async {
     state = state.copyWith(isLoading: true);
 
-    debugPrint('🌀 REGISTER STARTED');
-
     final result = await _registerUseCase(RegisterParams(email, password));
 
     result.fold(
       (failure) {
-        debugPrint('❌ REGISTER FAILED: ${failure.message}');
-
         state = state.copyWith(isLoading: false, errorMessage: failure.message);
-
-        debugPrint('🌀 isLoading = ${state.isLoading}');
       },
 
       (user) {
-        debugPrint('✅ REGISTER SUCCESS: ${user.email}');
-
         state = state.copyWith(isLoading: false, user: user);
-
-        debugPrint('🌀 isLoading = ${state.isLoading}');
 
         if (!AppEnv.disableEmailVerification) {
           _sendEmailVerificationUseCase();

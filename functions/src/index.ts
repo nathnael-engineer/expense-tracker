@@ -6,23 +6,17 @@ admin.initializeApp();
 const db = getFirestore();
 
 export const getExpenseSummary = onCall(async (request) => {
-  // 🔐 Auth guard (v2-safe)
   if (!request.auth) {
-    throw new HttpsError(
-      "unauthenticated",
-      "User must be authenticated"
-    );
+    throw new HttpsError("unauthenticated", "User must be authenticated");
   }
-
   const userId = request.auth.uid;
   const now = new Date();
 
-  // --- Date ranges ---
-  const startOfToday = new Date(
+  const startOfToday = new Date((
     now.getFullYear(),
     now.getMonth(),
     now.getDate()
-  );
+  ));
 
   const startOfTomorrow = new Date(startOfToday);
   startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
@@ -33,19 +27,18 @@ export const getExpenseSummary = onCall(async (request) => {
   const startOfNextWeek = new Date(startOfWeek);
   startOfNextWeek.setDate(startOfNextWeek.getDate() + 7);
 
-  const startOfMonth = new Date(
+  const startOfMonth = new Date(Date.UTC(
     now.getFullYear(),
     now.getMonth(),
     1
-  );
+  ));
 
-  const startOfNextMonth = new Date(
+  const startOfNextMonth = new Date(Date.UTC(
     now.getFullYear(),
     now.getMonth() + 1,
     1
-  );
+  ));
 
-  // ---- Convert to Timestamp ----
   const today = Timestamp.fromDate(startOfToday);
   const tomorrow = Timestamp.fromDate(startOfTomorrow);
   const week = Timestamp.fromDate(startOfWeek);
@@ -53,8 +46,6 @@ export const getExpenseSummary = onCall(async (request) => {
   const month = Timestamp.fromDate(startOfMonth);
   const nextMonth = Timestamp.fromDate(startOfNextMonth);
 
-
-  // --- Firestore queries ---
   const expensesRef = db
     .collection("users")
     .doc(userId)
@@ -66,7 +57,7 @@ export const getExpenseSummary = onCall(async (request) => {
     expensesRef.where("date", ">=", month).where("date", "<", nextMonth).get(),
   ]);
 
-  // --- Sum helper ---
+
   const sum = (snap: FirebaseFirestore.QuerySnapshot) =>
     snap.docs.reduce(
       (total, doc) => total + (doc.data().amount || 0),
@@ -78,17 +69,14 @@ export const getExpenseSummary = onCall(async (request) => {
     totalThisWeek: sum(weekSnap),
     totalThisMonth: sum(monthSnap),
     updatedAt: Timestamp.now(),
-
   };
 
-  // 🔥 Cache result
   await db
     .collection("users")
     .doc(userId)
     .collection("stats")
     .doc("expenseSummary")
-    .set(summary, {merge: true});
+    .set(summary, { merge: true });
 
   return summary;
-}
-);
+});

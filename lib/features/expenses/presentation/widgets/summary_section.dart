@@ -11,18 +11,12 @@ class SummarySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(expenseNotifierProvider);
 
-    debugPrint(
-      'SUMMARY → loading=${state.isLoadingSummary}, '
-      'summary=${state.summary}, '
-      'error=${state.errorMessage}',
-    );
-
     // ⏳ Loading
     if (state.isLoadingSummary && state.summary == null) {
       return const SummarySkeleton();
     }
 
-    // ❌ Error / Offline fallback
+    // Error / Offline fallback
     if (state.errorMessage != null && state.summary == null) {
       return Card(
         color: Colors.red.shade50,
@@ -50,12 +44,12 @@ class SummarySection extends ConsumerWidget {
       );
     }
 
-    // 📭 No summary yet
+    // No summary yet
     if (state.summary == null) {
       return const SizedBox.shrink();
     }
 
-    // ✅ Success
+    // Success
     return SummaryCards(summary: state.summary!);
   }
 }

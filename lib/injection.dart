@@ -27,13 +27,9 @@ import 'features/expenses/domain/usecases/get_summary_usecase.dart';
 import 'features/expenses/domain/usecases/update_expense_usecase.dart';
 import 'features/expenses/domain/usecases/delete_expense_usecase.dart';
 
-import 'package:flutter/foundation.dart';
-
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
-  debugPrint('➡ Registering Auth dependencies...');
-
   // ------------------------------
   // Firebase
   // ------------------------------
@@ -71,8 +67,6 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<SendEmailVerificationUseCase>(
     () => SendEmailVerificationUseCase(sl<AuthRepository>()),
   );
-
-  debugPrint('➡ Registering Expense dependencies...');
 
   // ------------------------------
   // Expense Datasource
@@ -114,6 +108,4 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<GetSummaryUseCase>(
     () => GetSummaryUseCase(sl<ExpenseRepository>()),
   );
-
-  debugPrint('✅ GetIt initialized');
 }

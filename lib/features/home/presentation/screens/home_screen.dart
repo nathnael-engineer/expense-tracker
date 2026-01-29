@@ -46,10 +46,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = authState.user;
 
     final userName = user?.name?.trim().isNotEmpty == true
-        ? user!.name!
+        ? user!.name!.capitalize()
         : user?.displayName?.trim().isNotEmpty == true
-        ? user!.displayName!
-        : user?.email.split('@').first ?? 'User';
+        ? user!.displayName!.capitalize()
+        : user?.email != null
+        ? user!.email.toCleanNameFromEmail()
+        : 'User';
 
     final filteredExpenses = expenseState.expenses.where((expense) {
       return expense.title.toLowerCase().contains(_query) ||
@@ -77,6 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final wasDeleting = prev?.isDeletingExpense == true;
       final isDoneDeleting = wasDeleting && next.isDeletingExpense == false;
 
+      // Failure snackbar
       if (isDoneDeleting &&
           next.errorMessage != null &&
           next.errorMessage!.isNotEmpty) {
@@ -139,7 +142,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Hi, ${userName.capitalize()} 👋",
+                        "Hi, $userName 👋",
                         style: Theme.of(context).textTheme.titleLarge,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -235,15 +238,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               );
                             },
                             onDismissed: (_) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                ref
-                                    .read(expenseNotifierProvider.notifier)
-                                    .clearError();
+                              ref
+                                  .read(expenseNotifierProvider.notifier)
+                                  .clearError();
 
-                                ref
-                                    .read(expenseNotifierProvider.notifier)
-                                    .deleteExpense(expense.id);
-                              });
+                              ref
+                                  .read(expenseNotifierProvider.notifier)
+                                  .deleteExpense(expense.id);
                             },
 
                             child: ExpenseTile(

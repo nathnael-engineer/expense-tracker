@@ -36,7 +36,7 @@ class ExpenseNotifier extends Notifier<ExpenseState> {
   }
 
   Future<void> _init() async {
-    // ⛔ Defer to next event loop tick (safe)
+    //  Defer to next event loop tick (safe)
     await Future.delayed(Duration.zero);
 
     state = state.copyWith(
@@ -101,10 +101,16 @@ class ExpenseNotifier extends Notifier<ExpenseState> {
   Future<void> deleteExpense(String expenseId) async {
     state = state.copyWith(isDeletingExpense: true);
 
+    final previousExpenses = state.expenses;
+    state = state.copyWith(
+      expenses: previousExpenses.where((e) => e.id != expenseId).toList(),
+    );
+
     final result = await _deleteExpense(expenseId);
 
     result.fold(
       (failure) => state = state.copyWith(
+        expenses: previousExpenses,
         isDeletingExpense: false,
         errorMessage: failure.message,
       ),
