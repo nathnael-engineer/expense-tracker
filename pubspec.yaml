@@ -2,7 +2,7 @@ name: expense_tracker
 description: "Expense Tracker."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -41,7 +41,7 @@ dependencies:
   # State Management
   flutter_riverpod: ^3.0.3
 
-  # DI 
+  # DI
   get_it: ^9.1.0
 
   # Firebase (latest compatible versions)
@@ -61,12 +61,12 @@ dependencies:
   flutter_native_splash: ^2.4.7
   flutter_launcher_icons: ^0.14.4
   network_info_plus: ^7.0.0
-  firebase_storage: ^13.0.5
   firebase_database: ^12.1.1
-  cloud_functions: ^6.0.5
   shimmer: ^3.0.0
   firebase_app_check: ^0.4.1+3
-  
+  connectivity_plus: ^7.0.0
+  rxdart: ^0.28.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -83,7 +83,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -121,7 +120,6 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
 flutter_native_splash:
-
   # Light mode splash (default)
   color: "#ffffff"
   image: assets/images/logo.png
@@ -139,6 +137,5 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: assets/images/logo.png
-  adaptive_icon_background: "#ffffff" 
+  adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: assets/images/logo.png
-

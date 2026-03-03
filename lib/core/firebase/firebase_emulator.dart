@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:expense_tracker/core/config/app_env.dart';
 import 'dart:io';
 
@@ -20,9 +18,7 @@ class FirebaseEmulatorConfig {
 
     FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);
-    FirebaseStorage.instance.useStorageEmulator(host, 9199);
     FirebaseDatabase.instance.useDatabaseEmulator(host, 9000);
-    FirebaseFunctions.instance.useFunctionsEmulator(host, 5001);
 
     debugPrint('🔥 Firebase emulators connected');
     debugPrint('Platform: ${_platform()}');

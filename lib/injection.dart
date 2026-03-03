@@ -2,7 +2,12 @@ import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+
+import 'package:expense_tracker/core/network/network_guard.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:expense_tracker/core/network/network_info.dart';
+import 'package:expense_tracker/core/network/network_info_impl.dart';
+import 'package:expense_tracker/core/network/request_handler.dart';
 
 // ------------------------------
 // Features - Auth
@@ -14,6 +19,8 @@ import 'features/auth/domain/usecases/login_usecase.dart';
 import 'features/auth/domain/usecases/logout_usecase.dart';
 import 'features/auth/domain/usecases/register_usecase.dart';
 import 'features/auth/domain/usecases/send_email_verification_usecase.dart';
+import 'features/auth/domain/usecases/reload_user_usecase.dart';
+import 'features/auth/domain/usecases/listen_auth_state_changes_usecase.dart';
 
 // ------------------------------
 // Features - Expenses
@@ -36,13 +43,16 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
   sl.registerLazySingleton<FirebaseDatabase>(() => FirebaseDatabase.instance);
   sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
-  sl.registerLazySingleton<FirebaseFunctions>(() => FirebaseFunctions.instance);
 
   // ------------------------------
   // Auth Datasource
   // ------------------------------
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(sl<FirebaseAuth>(), sl<FirebaseDatabase>()),
+    () => AuthRemoteDataSourceImpl(
+      sl<FirebaseAuth>(),
+      sl<FirebaseDatabase>(),
+      sl<RequestHandler>(),
+    ),
   );
 
   // ------------------------------
@@ -67,6 +77,12 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<SendEmailVerificationUseCase>(
     () => SendEmailVerificationUseCase(sl<AuthRepository>()),
   );
+  sl.registerLazySingleton<ReloadUserUseCase>(
+    () => ReloadUserUseCase(sl<AuthRepository>()),
+  );
+  sl.registerLazySingleton<ListenAuthStateChangesUseCase>(
+    () => ListenAuthStateChangesUseCase(sl<AuthRepository>()),
+  );
 
   // ------------------------------
   // Expense Datasource
@@ -74,8 +90,8 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<ExpenseRemoteDataSource>(
     () => ExpenseRemoteDataSourceImpl(
       sl<FirebaseFirestore>(),
-      sl<FirebaseFunctions>(),
       sl<FirebaseAuth>(),
+      sl<RequestHandler>(),
     ),
   );
 
@@ -107,5 +123,19 @@ Future<void> initDependencies() async {
 
   sl.registerLazySingleton<GetSummaryUseCase>(
     () => GetSummaryUseCase(sl<ExpenseRepository>()),
+  );
+
+  // ------------------------------
+  // Core - Network
+  // ------------------------------
+  sl.registerLazySingleton<Connectivity>(() => Connectivity());
+
+  sl.registerLazySingleton<NetworkInfo>(
+    () => NetworkInfoImpl(sl<Connectivity>()),
+  );
+  sl.registerLazySingleton<NetworkGuard>(() => NetworkGuard(sl<NetworkInfo>()));
+
+  sl.registerLazySingleton<RequestHandler>(
+    () => RequestHandler(sl<NetworkGuard>()),
   );
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import 'package:expense_tracker/features/auth/application/providers/auth_providers.dart';
+class SplashConfig {
+  static const Duration totalDuration = Duration(milliseconds: 1800);
+  static const double scaleUpWeight = 60.0;
+  static const double settleWeight = 40.0;
+  static const double logoSize = 160.0;
+}
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -14,51 +18,42 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _scale;
-  late final Animation<double> _fade;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _opacityAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // iOS-style animation controller
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: SplashConfig.totalDuration,
     );
-    // Scale (subtle)
-    _scale = Tween<double>(
-      begin: 0.9,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    // Fade in
-    _fade = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.2,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: SplashConfig.scaleUpWeight,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.2,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: SplashConfig.settleWeight,
+      ),
+    ]).animate(_controller);
 
-    _controller.forward();
-
-    _handleNavigation();
-  }
-
-  Future<void> _handleNavigation() async {
-    // Let splash animation + branding finish
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-
-    // Fade out before routing (smooth transition)
-    await _controller.reverse();
-    if (!mounted) return;
-
-    final authState = ref.read(authNotifierProvider);
-
-    if (authState.user != null) {
-      context.go('/home');
-    } else {
-      context.go('/login');
-    }
+    _opacityAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeIn),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.forward();
+    });
   }
 
   @override
@@ -72,20 +67,37 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: FadeTransition(
-          opacity: _fade,
-          child: ScaleTransition(
-            scale: _scale,
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/logo.png',
-                width: 160,
-                height: 160,
-                fit: BoxFit.cover,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _opacityAnimation.value,
+              child: Transform.scale(
+                scale: _scaleAnimation.value,
+                child: child,
               ),
-            ),
-          ),
+            );
+          },
+          child: const _LogoWidget(),
         ),
+      ),
+    );
+  }
+}
+
+class _LogoWidget extends StatelessWidget {
+  const _LogoWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: Image.asset(
+        'assets/images/logo.png',
+        width: SplashConfig.logoSize,
+        height: SplashConfig.logoSize,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.error, size: SplashConfig.logoSize),
       ),
     );
   }

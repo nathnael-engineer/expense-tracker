@@ -5,5 +5,5 @@ import 'package:expense_tracker/features/expenses/application/notifiers/expense_
 import 'package:expense_tracker/features/expenses/application/state/expense_state.dart';
 
 final expenseNotifierProvider = NotifierProvider<ExpenseNotifier, ExpenseState>(
-  ExpenseNotifier.new,
+  () => ExpenseNotifier(),
 );

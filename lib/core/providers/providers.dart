@@ -5,6 +5,8 @@ import 'package:expense_tracker/features/auth/domain/usecases/login_usecase.dart
 import 'package:expense_tracker/features/auth/domain/usecases/register_usecase.dart';
 import 'package:expense_tracker/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:expense_tracker/features/auth/domain/usecases/send_email_verification_usecase.dart';
+import 'package:expense_tracker/features/auth/domain/usecases/reload_user_usecase.dart';
+import 'package:expense_tracker/features/auth/domain/usecases/listen_auth_state_changes_usecase.dart';
 
 import 'package:expense_tracker/features/expenses/domain/usecases/add_expense_usecase.dart';
 import 'package:expense_tracker/features/expenses/domain/usecases/get_expenses_usecase.dart';
@@ -18,6 +20,10 @@ final registerUseCaseProvider = Provider((ref) => sl<RegisterUseCase>());
 final logoutUseCaseProvider = Provider((ref) => sl<LogoutUseCase>());
 final sendEmailVerificationUseCaseProvider = Provider(
   (ref) => sl<SendEmailVerificationUseCase>(),
+);
+final reloadUserUseCaseProvider = Provider((ref) => sl<ReloadUserUseCase>());
+final listenAuthStateChangesProvider = Provider(
+  (ref) => sl<ListenAuthStateChangesUseCase>(),
 );
 
 // ----------- EXPENSE USECASES -----------

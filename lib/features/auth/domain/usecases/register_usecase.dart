@@ -17,7 +17,7 @@ class RegisterUseCase implements UseCase<UserEntity, RegisterParams> {
   RegisterUseCase(this.repository);
 
   @override
-  Future<Either<Failure, UserEntity>> call(RegisterParams params) async {
-    return await repository.register(params.email, params.password);
+  Future<Either<Failure, UserEntity>> call(RegisterParams params) {
+    return repository.register(params.email, params.password);
   }
 }

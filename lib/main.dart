@@ -4,9 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:expense_tracker/firebase_options.dart';
 import 'package:expense_tracker/core/theme/app_theme.dart';
 import 'package:expense_tracker/core/router/app_router.dart';
-import 'package:expense_tracker/core/firebase/firebase_emulator.dart';
+// import 'package:expense_tracker/core/firebase/firebase_emulator.dart';
 import 'package:expense_tracker/injection.dart' as injection;
-import 'package:expense_tracker/core/firebase/firebase_appcheck.dart';
+// import 'package:expense_tracker/core/firebase/firebase_appcheck.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,10 +15,10 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Enable Firebase App Check (DEBUG MODE)
-  await FirebaseAppCheckService.activate();
+  // await FirebaseAppCheckService.activate();
 
   // Connect Firebase services to Firebase Emulators (DEBUG ONLY)
-  await FirebaseEmulatorConfig.connect();
+  // await FirebaseEmulatorConfig.connect();
 
   // Initialize GetIt / DI
   await injection.initDependencies();

@@ -7,15 +7,7 @@ class SendEmailVerificationUseCase {
 
   SendEmailVerificationUseCase(this.repository);
 
-  /// Returns a message if successful, or a failure if an error occurs
-  Future<Either<AuthFailure, String>> call() async {
-    try {
-      await repository.sendEmailVerification();
-      return const Right(
-        "We sent a verification email. Please verify your email before logging in.",
-      );
-    } catch (e) {
-      return Left(EmailVerificationFailure(e.toString()));
-    }
+  Future<Either<Failure, void>> call() {
+    return repository.sendEmailVerification();
   }
 }

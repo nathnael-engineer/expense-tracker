@@ -1,75 +1,112 @@
-import 'package:expense_tracker/features/auth/domain/usecases/send_email_verification_usecase.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:expense_tracker/core/usecases/usecase.dart';
+import 'package:expense_tracker/core/providers/providers.dart';
+
+import 'package:expense_tracker/features/auth/application/state/auth_state.dart';
+import 'package:expense_tracker/features/auth/domain/entities/user_entity.dart';
 
 import 'package:expense_tracker/features/auth/domain/usecases/login_usecase.dart';
 import 'package:expense_tracker/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:expense_tracker/features/auth/domain/usecases/register_usecase.dart';
+import 'package:expense_tracker/features/auth/domain/usecases/send_email_verification_usecase.dart';
+import 'package:expense_tracker/features/auth/domain/usecases/reload_user_usecase.dart';
+import 'package:expense_tracker/features/auth/domain/usecases/listen_auth_state_changes_usecase.dart';
 
-import 'package:expense_tracker/features/auth/application/state/auth_state.dart';
-import 'package:expense_tracker/core/providers/providers.dart';
-import 'package:expense_tracker/core/config/app_env.dart';
+class AuthNotifier extends AsyncNotifier<AuthState> {
+  // === DEPENDENCIES ===
 
-class AuthNotifier extends Notifier<AuthState> {
+  late final LoginUseCase _loginUseCase;
+  late final RegisterUseCase _registerUseCase;
+  late final LogoutUseCase _logoutUseCase;
+  late final SendEmailVerificationUseCase _sendEmailVerificationUseCase;
+  late final ReloadUserUseCase _reloadUserUseCase;
+  late final ListenAuthStateChangesUseCase _listenAuthStateChangesUseCase;
+
+  StreamSubscription<UserEntity?>? _authSubscription;
+
+  // ===== BUILD =====
+
   @override
-  AuthState build() {
-    return AuthState.initial();
+  Future<AuthState> build() async {
+    _setupDependencies();
+    return _bootstrap();
   }
 
-  // ====== Dependencies ======
-  LoginUseCase get _loginUseCase => ref.read(loginUseCaseProvider);
-  RegisterUseCase get _registerUseCase => ref.read(registerUseCaseProvider);
-  LogoutUseCase get _logoutUseCase => ref.read(logoutUseCaseProvider);
-  SendEmailVerificationUseCase get _sendEmailVerificationUseCase =>
-      ref.read(sendEmailVerificationUseCaseProvider);
+  void _setupDependencies() {
+    _loginUseCase = ref.read(loginUseCaseProvider);
+    _registerUseCase = ref.read(registerUseCaseProvider);
+    _logoutUseCase = ref.read(logoutUseCaseProvider);
+    _sendEmailVerificationUseCase = ref.read(
+      sendEmailVerificationUseCaseProvider,
+    );
+    _reloadUserUseCase = ref.read(reloadUserUseCaseProvider);
+    _listenAuthStateChangesUseCase = ref.read(listenAuthStateChangesProvider);
+  }
 
-  // ====== Actions ======
+  Future<AuthState> _bootstrap() async {
+    final completer = Completer<AuthState>();
+    final start = DateTime.now();
+
+    _authSubscription = _listenAuthStateChangesUseCase().listen((user) async {
+      final newState = AuthState(
+        user: user,
+        requiresEmailVerification: user != null && !user.emailVerified,
+      );
+
+      if (!completer.isCompleted) {
+        final elapsed = DateTime.now().difference(start);
+        const minDuration = Duration(milliseconds: 3000);
+
+        if (elapsed < minDuration) {
+          await Future.delayed(minDuration - elapsed);
+        }
+
+        completer.complete(newState);
+      }
+
+      state = AsyncData(newState);
+    });
+
+    ref.onDispose(() => _authSubscription?.cancel());
+
+    return completer.future;
+  }
+
+  // ===== Actions =====
 
   Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = const AsyncLoading();
 
     final result = await _loginUseCase(LoginParams(email, password));
 
     result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-      },
-      (user) {
-        state = state.copyWith(isLoading: false, user: user);
-      },
+      (failure) => state = AsyncError(failure.message, StackTrace.current),
+      (_) {},
     );
   }
 
   Future<void> register(String email, String password) async {
-    state = state.copyWith(isLoading: true);
+    state = const AsyncLoading();
 
     final result = await _registerUseCase(RegisterParams(email, password));
 
     result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-      },
-
-      (user) {
-        state = state.copyWith(isLoading: false, user: user);
-
-        if (!AppEnv.disableEmailVerification) {
-          _sendEmailVerificationUseCase();
-        }
-      },
+      (failure) => state = AsyncError(failure.message, StackTrace.current),
+      (_) {},
     );
   }
 
+  Future<void> resendVerificationEmail() async {
+    await _sendEmailVerificationUseCase();
+  }
+
+  Future<void> reloadUser() async {
+    await _reloadUserUseCase(NoParams());
+  }
+
   Future<void> logout() async {
-    state = state.copyWith(isLoading: true);
-
-    final result = await _logoutUseCase(NoParams());
-
-    result.fold(
-      (failure) => state = state.copyWith(
-        isLoading: false,
-        errorMessage: failure.message,
-      ),
-      (_) => state = AuthState.initial(),
-    );
+    await _logoutUseCase(NoParams());
   }
 }

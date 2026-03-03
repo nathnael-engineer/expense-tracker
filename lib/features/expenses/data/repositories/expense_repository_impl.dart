@@ -5,6 +5,7 @@ import 'package:expense_tracker/features/expenses/domain/entities/expense_entity
 import 'package:expense_tracker/features/expenses/domain/repositories/expense_repository.dart';
 import 'package:expense_tracker/features/expenses/data/datasources/expense_remote_datasource.dart';
 import 'package:expense_tracker/features/expenses/data/models/expense_model.dart';
+import 'package:expense_tracker/core/errors/exceptions.dart';
 
 class ExpenseRepositoryImpl implements ExpenseRepository {
   final ExpenseRemoteDataSource remote;
@@ -16,8 +17,12 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     try {
       final result = await remote.getExpenses();
       return Right(result);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    } on AuthException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -26,8 +31,12 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     try {
       await remote.addExpense(ExpenseModel.fromEntity(expense));
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    } on AuthException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -36,8 +45,12 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     try {
       await remote.updateExpense(ExpenseModel.fromEntity(expense));
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    } on AuthException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -46,8 +59,12 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     try {
       await remote.deleteExpense(expenseId);
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    } on AuthException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -56,8 +73,12 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     try {
       final result = await remote.getSummary();
       return Right(result);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    } on AuthException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 }

@@ -1,5 +1,3 @@
-/// Failures are used at the domain layer.
-/// They wrap exceptions in a UI-safe format.
 abstract class Failure {
   final String message;
   const Failure(this.message);
@@ -12,6 +10,11 @@ class ServerFailure extends Failure {
 
 class CacheFailure extends Failure {
   const CacheFailure([super.message = "Cache Failure"]);
+}
+
+/// Network failures
+class NetworkFailure extends Failure {
+  const NetworkFailure([super.message = "Network Failure"]);
 }
 
 /// Auth failures
@@ -28,12 +31,20 @@ class RegisterFailure extends AuthFailure {
   const RegisterFailure([super.message = "Register Failure"]);
 }
 
-class EmailVerificationFailure extends AuthFailure {
-  const EmailVerificationFailure([
-    super.message = "Email Verification Failure",
+class SendEmailVerificationFailure extends AuthFailure {
+  const SendEmailVerificationFailure([
+    super.message = "Failed to send verification email",
   ]);
+}
+
+class ReloadUserFailure extends AuthFailure {
+  const ReloadUserFailure([super.message = "Failed to refresh user session"]);
 }
 
 class LogoutFailure extends AuthFailure {
   const LogoutFailure([super.message = "Logout Failure"]);
+}
+
+class UnauthorizedFailure extends Failure {
+  const UnauthorizedFailure([super.message = "User not authenticated"]);
 }

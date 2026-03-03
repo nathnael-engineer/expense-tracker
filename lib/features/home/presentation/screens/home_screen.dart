@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:expense_tracker/features/auth/application/providers/auth_providers.dart';
-import 'package:expense_tracker/features/auth/application/state/auth_state.dart';
 import 'package:expense_tracker/features/expenses/application/providers/expense_providers.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/expense_tile.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/summary_section.dart';
 
 import 'package:expense_tracker/core/utils/string_extensions.dart';
+import 'package:expense_tracker/core/widgets/network_banner.dart';
+import 'package:expense_tracker/core/network/network_banner_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -41,9 +42,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final bannerAsync = ref.watch(networkBannerProvider);
+
+    final authAsync = ref.watch(authNotifierProvider);
+
+    if (authAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final user = authAsync.value?.user;
+
     final expenseState = ref.watch(expenseNotifierProvider);
-    final user = authState.user;
 
     final userName = user?.name?.trim().isNotEmpty == true
         ? user!.name!.capitalize()
@@ -59,20 +68,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }).toList();
 
     final expenses = _query.isEmpty ? expenseState.expenses : filteredExpenses;
-
-    // Navigate to login if user is logged out
-    ref.listen<AuthState>(authNotifierProvider, (prev, next) {
-      if (next.user == null && prev?.user != null) {
-        context.go('/login');
-      }
-
-      // Show error messages
-      if (next.errorMessage != null && next.errorMessage!.isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
-      }
-    });
 
     ref.listen(expenseNotifierProvider, (prev, next) {
       // Only show error after deletion finished
@@ -124,145 +119,152 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(expenseNotifierProvider.notifier).loadExpenses();
-          await ref.read(expenseNotifierProvider.notifier).loadSummary();
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // User Greeting
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Hi, $userName 👋",
-                        style: Theme.of(context).textTheme.titleLarge,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        "Your Financial Snapshot",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Icon(Icons.account_circle, size: 40),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Search Bar
-              TextField(
-                controller: _searchCtrl,
-                onChanged: (value) {
-                  setState(() {
-                    _query = value.toLowerCase();
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: "Search expenses",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Summary Section
-              const SummarySection(),
-              const SizedBox(height: 20),
-
-              // Expenses List
-              Expanded(
-                child: expenses.isEmpty
-                    ? Center(
-                        child: Text(
-                          _query.isEmpty
-                              ? "No expenses yet"
-                              : "No matching expenses",
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: expenses.length,
-                        itemBuilder: (context, index) {
-                          final expense = expenses[index];
-                          return Dismissible(
-                            key: ValueKey(expense.id),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              color: Colors.red,
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              child: const Icon(
-                                Icons.delete,
-                                color: Colors.white,
-                              ),
+      body: Column(
+        children: [
+          NetworkBanner(bannerAsync: bannerAsync),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await ref.read(expenseNotifierProvider.notifier).loadExpenses();
+                await ref.read(expenseNotifierProvider.notifier).loadSummary();
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    // User Greeting
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Hi, $userName 👋",
+                              style: Theme.of(context).textTheme.titleLarge,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            confirmDismiss: (_) async {
-                              return await showDialog<bool>(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text('Delete Expense'),
-                                  content: const Text(
-                                    'Are you sure you want to delete this expense?',
+                            Text(
+                              "Your Financial Snapshot",
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            onDismissed: (_) {
-                              ref
-                                  .read(expenseNotifierProvider.notifier)
-                                  .clearError();
+                            ),
+                          ],
+                        ),
+                        const Icon(Icons.account_circle, size: 40),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
 
-                              ref
-                                  .read(expenseNotifierProvider.notifier)
-                                  .deleteExpense(expense.id);
-                            },
+                    // Search Bar
+                    TextField(
+                      controller: _searchCtrl,
+                      onChanged: (value) {
+                        setState(() {
+                          _query = value.toLowerCase();
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: "Search expenses",
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-                            child: ExpenseTile(
-                              expense: expense,
-                              onTap: () {
-                                context.pushNamed(
-                                  'edit-expense',
-                                  extra: expense,
+                    // Summary Section
+                    const SummarySection(),
+                    const SizedBox(height: 20),
+
+                    // Expenses List
+                    Expanded(
+                      child: expenses.isEmpty
+                          ? Center(
+                              child: Text(
+                                _query.isEmpty
+                                    ? "No expenses yet"
+                                    : "No matching expenses",
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: expenses.length,
+                              itemBuilder: (context, index) {
+                                final expense = expenses[index];
+                                return Dismissible(
+                                  key: ValueKey(expense.id),
+                                  direction: DismissDirection.endToStart,
+                                  background: Container(
+                                    color: Colors.red,
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.only(right: 20),
+                                    child: const Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  confirmDismiss: (_) async {
+                                    return await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        title: const Text('Delete Expense'),
+                                        content: const Text(
+                                          'Are you sure you want to delete this expense?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  onDismissed: (_) {
+                                    ref
+                                        .read(expenseNotifierProvider.notifier)
+                                        .clearError();
+
+                                    ref
+                                        .read(expenseNotifierProvider.notifier)
+                                        .deleteExpense(expense.id);
+                                  },
+
+                                  child: ExpenseTile(
+                                    expense: expense,
+                                    onTap: () {
+                                      context.pushNamed(
+                                        'edit-expense',
+                                        extra: expense,
+                                      );
+                                    },
+                                  ),
                                 );
                               },
                             ),
-                          );
-                        },
-                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed('add-expense'),

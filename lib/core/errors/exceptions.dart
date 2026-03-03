@@ -1,10 +1,16 @@
-/// Exceptions come from data sources (Firebase, APIs, Local DB)
-/// They are low-level errors — not shown to UI directly.
-class ServerException implements Exception {}
+class ServerException implements Exception {
+  final String message;
+  ServerException(this.message);
+}
 
 class CacheException implements Exception {}
 
 class AuthException implements Exception {
   final String message;
   AuthException(this.message);
+}
+
+class NetworkException implements Exception {
+  final String message;
+  NetworkException(this.message);
 }

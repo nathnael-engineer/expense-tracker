@@ -2,12 +2,14 @@ import 'package:expense_tracker/features/expenses/domain/entities/expense_entity
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:expense_tracker/core/router/router_refresh_notifier.dart';
 
 import 'package:expense_tracker/features/auth/application/providers/auth_providers.dart';
 
 import 'package:expense_tracker/features/auth/presentation/screens/login_screen.dart';
 import 'package:expense_tracker/features/auth/presentation/screens/signup_screen.dart';
 import 'package:expense_tracker/features/auth/presentation/screens/splash_screen.dart';
+import 'package:expense_tracker/features/auth/presentation/screens/verify_email_screen.dart';
 
 import 'package:expense_tracker/features/home/presentation/screens/home_screen.dart';
 import 'package:expense_tracker/features/expenses/presentation/screens/add_expense_screen.dart';
@@ -15,23 +17,40 @@ import 'package:expense_tracker/features/expenses/presentation/screens/dashboard
 import 'package:expense_tracker/features/expenses/presentation/screens/view_expense_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authListenable = ref.watch(authListenableProvider);
-  ref.read(authNotifierProvider.notifier);
+  final refreshNotifier = ref.watch(routerRefreshProvider);
 
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: authListenable,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
-      final authState = ref.read(authNotifierProvider);
+      final authAsync = ref.read(authNotifierProvider);
+
+      if (!authAsync.hasValue) {
+        return state.matchedLocation == '/' ? null : '/';
+      }
+
+      final authState = authAsync.value!;
+
       final loggedIn = authState.user != null;
+      final requiresVerification = authState.requiresEmailVerification;
 
-      final loggingIn =
+      final goingToSplash = state.matchedLocation == '/';
+      final goingToAuth =
           state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup' ||
-          state.matchedLocation == '/';
+          state.matchedLocation == '/signup';
+      final goingToVerify = state.matchedLocation == '/verify-email';
 
-      if (!loggedIn && !loggingIn) return '/login';
-      if (loggedIn && state.matchedLocation == '/login') return '/home';
+      if (!loggedIn) {
+        return goingToAuth ? null : '/login';
+      }
+
+      if (requiresVerification) {
+        return goingToVerify ? null : '/verify-email';
+      }
+
+      if (goingToAuth || goingToVerify || goingToSplash) {
+        return '/home';
+      }
 
       return null;
     },
@@ -40,13 +59,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         name: 'splash',
-        builder: (context, state) => const SplashScreen(),
+        pageBuilder: (context, state) {
+          return const NoTransitionPage(child: SplashScreen());
+        },
       ),
       GoRoute(
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
+
+      GoRoute(
+        path: '/verify-email',
+        name: 'verify-email',
+        builder: (context, state) => const VerifyEmailScreen(),
+      ),
+
       GoRoute(
         path: '/signup',
         name: 'signup',

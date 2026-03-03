@@ -8,6 +8,9 @@ import 'package:expense_tracker/core/utils/validators.dart';
 import 'package:expense_tracker/core/widgets/shake_widget.dart';
 import 'package:expense_tracker/core/widgets/animated_password_field.dart';
 
+import 'package:expense_tracker/core/widgets/network_banner.dart';
+import 'package:expense_tracker/core/network/network_banner_provider.dart';
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -60,99 +63,110 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final bannerAsync = ref.watch(networkBannerProvider);
 
-    ref.listen<AuthState>(authNotifierProvider, (prev, next) {
-      // Show error messages
-      if (next.errorMessage != null && next.errorMessage!.isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
-      }
+    final authAsync = ref.watch(authNotifierProvider);
 
-      // when login is successful, navigate to home
-      if (next.user != null && prev?.user?.id != next.user?.id) {
-        context.go("/home");
-      }
+    ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
+      next.whenOrNull(
+        error: (error, _) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.toString())));
+        },
+      );
     });
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset('assets/images/logo.png', width: 80, height: 80),
-              const SizedBox(height: 24),
-              Text(
-                "Track Your Expenses",
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.brown.shade700,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Sign in to continue managing your finances.",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
-              ),
+      body: Column(
+        children: [
+          NetworkBanner(bannerAsync: bannerAsync),
 
-              const SizedBox(height: 32),
-              Form(
-                key: _formKey,
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ShakeWidget(
-                      shake: _shakeEmail,
-                      child: TextFormField(
-                        controller: _emailCtrl,
-                        decoration: const InputDecoration(
-                          labelText: "Email",
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: Validators.email,
-                      ),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 80,
+                      height: 80,
                     ),
-
-                    const SizedBox(height: 12),
-                    AnimatedPasswordField(
-                      controller: _passCtrl,
-                      label: "Password",
-                      shake: _shakePassword,
-                      validator: Validators.password,
-                    ),
-
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: FilledButton(
-                        onPressed: authState.isLoading ? null : _onLogin,
-                        child: authState.isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              )
-                            : const Text("Login"),
-                      ),
+                    Text(
+                      "Track Your Expenses",
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown.shade700,
+                          ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => context.go("/signup"),
-                      child: const Text("Create Account"),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Sign in to continue managing your finances.",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 32),
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          ShakeWidget(
+                            shake: _shakeEmail,
+                            child: TextFormField(
+                              controller: _emailCtrl,
+                              decoration: const InputDecoration(
+                                labelText: "Email",
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: Validators.email,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+                          AnimatedPasswordField(
+                            controller: _passCtrl,
+                            label: "Password",
+                            shake: _shakePassword,
+                            validator: Validators.password,
+                          ),
+
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: FilledButton(
+                              onPressed: authAsync.isLoading ? null : _onLogin,
+                              child: authAsync.isLoading
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    )
+                                  : const Text("Login"),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () => context.go("/signup"),
+                            child: const Text("Create Account"),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
